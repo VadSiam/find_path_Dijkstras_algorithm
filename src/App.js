@@ -14,6 +14,7 @@ import Select from '@material-ui/core/Select';
 import logo from './logo.svg';
 import './App.css';
 import response from './source/response.json';
+import dijkstra from './source/dijkstras-algorithm';
 
 const styles = theme => ({
   root: {
@@ -34,8 +35,8 @@ const styles = theme => ({
 
 class App extends Component {
   state = {
-    from: '',
-    to: '',
+    from: 'Amsterdam',
+    to: 'Moscow',
     departureCity: [],
     arrivalCity: [],
     variant: 'cheapest',
@@ -69,7 +70,7 @@ class App extends Component {
 
     console.log(graph);
 
-    this.setState({ departureCity, arrivalCity });
+    this.setState({ departureCity, arrivalCity, graph });
   }
 
   getDepartureCity = (depar) => {
@@ -108,6 +109,14 @@ class App extends Component {
 
   onClickVariant = (variant) => {
     this.setState({ variant });
+  }
+
+  searchPath = () => {
+    const { from, to, graph } = this.state;
+
+    console.log(dijkstra({ from, to, graph }));
+
+    // console.log(from, to);
   }
 
   render() {
@@ -184,7 +193,12 @@ class App extends Component {
           </Button>
 
           <div>
-            <Button variant="contained" color="secondary" className={classes.button}>
+            <Button
+              onClick={this.searchPath}
+              variant="contained"
+              color="secondary"
+              className={classes.button}
+            >
               Search
               <Search className={classes.rightIcon} />
             </Button>
