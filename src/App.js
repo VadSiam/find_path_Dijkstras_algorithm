@@ -2,13 +2,10 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import { withStyles } from '@material-ui/core/styles';
-// import Input from '@material-ui/core/Input';
-// import Icon from '@material-ui/core/Icon';
 import Search from '@material-ui/icons/Search';
 import Button from '@material-ui/core/Button';
 import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
-// import FormHelperText from '@material-ui/core/FormHelperText';
 import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
 import logo from './logo.svg';
@@ -48,29 +45,32 @@ class App extends Component {
 
   createDefaultState = () => {
     const { deals } = response;
+
     const departureCity = this.getDepartureCity('depar');
     const arrivalCity = this.getDepartureCity();
 
-    const graph = departureCity.reduce((graphObject, city) => {
-      const getNodes = deals.filter(item => item.departure === city);
-      const t = {};
+    const graphArr = [];
 
-      getNodes.forEach((i) => {
-        if (!t[i.arrival]) {
-          t[i.arrival] = i;
-        } else if (t[i.arrival].arrival === i.arrival
-          && t[i.arrival].cost > i.cost) {
-          t[i.arrival] = i;
-        }
+    departureCity.forEach((city) => {
+      const currentCityFilter = deals.filter(item => item.departure === city);
+
+      currentCityFilter.forEach((elemF) => {
+        if (!graphArr.length) graphArr.push(elemF);
+        const currentArr = graphArr;
+
+        currentArr.forEach((elem, indx) => {
+          if (elem.arrival === elemF.arrival && elem.cost > elemF.cost) {
+            graphArr.splice(indx, 1);
+            graphArr.push(elemF);
+          } else if (!graphArr.some(i => i.arrival === elemF.arrival
+            && i.departure === elemF.departure)) {
+            graphArr.push(elemF);
+          }
+        });
       });
-      graphObject = Object.assign({ [city]: t }, graphObject);
+    });
 
-      return graphObject;
-    }, {});
-
-    console.log(graph);
-
-    this.setState({ departureCity, arrivalCity, graph });
+    this.setState({ departureCity, arrivalCity, graphArr });
   }
 
   getDepartureCity = (depar) => {
@@ -112,25 +112,40 @@ class App extends Component {
   }
 
   searchPath = () => {
-    const { from, to, graph } = this.state;
+    const { from, to, graphArr } = this.state;
+    const optimalPath = dijkstra({ from, to, graphArr });
 
-    console.log(dijkstra({ from, to, graph }));
+    this.setState({ optimalPath });
+  }
 
-    // console.log(from, to);
+  showPath = (optimalPath = []) => {
+    let sum = 0;
+    const objectsJSX = optimalPath.map((i) => {
+      sum += i.cost;
+
+      return (
+        <li key={i.reference}>{`${i.departure} - ${i.arrival}...transport: ${i.transport}`}</li>
+      );
+    });
+
+    return (
+      <div>
+        <ul>{objectsJSX}</ul>
+        <div>{`Total: ${sum}`}</div>
+      </div>
+    );
   }
 
   render() {
     const { classes } = this.props;
     const {
-      departureCity, arrivalCity, from, to, variant,
+      departureCity, arrivalCity, from, to, variant, optimalPath,
     } = this.state;
-    // const departureCity = this.getDepartureCity('depar');
-    // const arrivalCity = this.getDepartureCity();
 
     const departureItems = this.getItems(departureCity);
     const arrivalItems = this.getItems(arrivalCity);
 
-    // console.log(departureCity);
+    const showPath = this.showPath(optimalPath);
 
     return (
       <div className="App">
@@ -177,7 +192,6 @@ class App extends Component {
             color={variant === 'cheapest' ? 'primary' : 'default'}
             onClick={() => this.onClickVariant('cheapest')}
             variant="contained"
-            // color="primary"
             className={classes.button}
           >
               Cheapest
@@ -186,7 +200,6 @@ class App extends Component {
             color={variant === 'fastes' ? 'primary' : 'default'}
             onClick={() => this.onClickVariant('fastes')}
             variant="contained"
-            // color="primary"
             className={classes.button}
           >
                 Fastes
@@ -205,6 +218,7 @@ class App extends Component {
           </div>
 
         </div>
+        {showPath}
       </div>
     );
   }
@@ -213,7 +227,5 @@ class App extends Component {
 App.propTypes = {
   classes: PropTypes.object.isRequired,
 };
-
-// export default App;
 
 export default withStyles(styles)(App);
